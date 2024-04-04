@@ -115,9 +115,36 @@ tuple<int, int, int> MRU(const vector<int>& arr, int n) {
     return make_tuple(misses, hits, evictions);
 }
 
+// MOD Cache Replacement Algorithm
+tuple<int, int, int> MOD(const vector<int>& arr, int n) {
+    int misses = 0, hits = 0, evictions = 0;
+    vector<int> cache;
+    list<int> fifoQueue;
+
+    for (int i=0; i < arr.size(); ++i){
+        // cout << arr[i] << endl;
+        auto it = find(cache.begin(), cache.end(), arr[i]);
+
+        if (it != cache.end()) {
+            ++hits;
+        } else {
+            ++misses;
+            if (cache.size() == n) {
+                ++evictions;
+                int index_to_be_removed = arr[i] % n;
+                cache.erase(cache.begin() + index_to_be_removed);
+            }
+            cache.push_back(arr[i]);
+        }
+    }
+
+    return make_tuple(misses, hits, evictions);
+}
+
+
 int main() {
     // vector<int> arr = {2, 3, 4, 7, 6, 3, 4, 7, 5, 4, 7, 8}; // original
-        vector<int> arr = {2, 3, 4, 7, 6, 3, 4, 7, 5, 4, 7, 8, 10, 11, 2, 3, 4, 6, 1, 3, 7, 8}; // duplicate
+    vector<int> arr = {2, 3, 4, 7, 6, 3, 4, 7, 5, 4, 7, 8, 10, 11, 2, 3, 4, 6, 1, 3, 7, 8}; // extended
 
     int n = 8; 
     // FIFO
@@ -139,6 +166,11 @@ int main() {
     int mru_misses, mru_hits, mru_evictions;
     tie(mru_misses, mru_hits, mru_evictions) = MRU(arr, n);
     cout << "MRU Misses: " << mru_misses << ", Hits: " << mru_hits << ", Evictions: " << mru_evictions << endl;
+
+    // MOD
+    int mod_misses, mod_hits, mod_evictions;
+    tie(mod_misses, mod_hits, mod_evictions) = MOD(arr, n);
+    cout << "MOD Misses: " << mod_misses << ", Hits: " << mod_hits << ", Evictions: " << mod_evictions << endl;
 
     return 0;
 }
