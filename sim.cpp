@@ -134,7 +134,7 @@ tuple<int, int, int> MOD(const vector<int>& arr, int l1_cache_size, int l2_cache
                 // update the L1 cache
                 if (l1_cache.size() == l1_cache_size) {
                     int index_to_be_removed = arr[i] % l1_cache_size;
-                    l1_cache.erase(l2_cache.begin() + index_to_be_removed);
+                    l1_cache.erase(l1_cache.begin() + index_to_be_removed);
                     ++evictions;
                     l1_cache.insert(l1_cache.begin()+index_to_be_removed, arr[i]); // insert where the block is removed
                 } else {
