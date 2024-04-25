@@ -116,8 +116,8 @@ tuple<int, int, int> MRU(const vector<int>& arr, int n) {
 }
 
 // MOD Cache Replacement Algorithm
-tuple<int, int, int> MOD(const vector<int>& arr, int l1_cache_size, int l2_cache_size) {
-    int misses = 0, hits = 0, evictions = 0;
+tuple<int, int, int, int> MOD(const vector<int>& arr, int l1_cache_size, int l2_cache_size) {
+    int l1_misses = 0, l2_misses = 0, hits = 0, evictions = 0;
     vector<int> l1_cache;
     vector<int> l2_cache;
     // list<int> fifoQueue;
@@ -128,6 +128,7 @@ tuple<int, int, int> MOD(const vector<int>& arr, int l1_cache_size, int l2_cache
             ++hits;
         } else {
             // ++misses;
+            ++l1_misses;
             auto l2_cache_itr = find(l2_cache.begin(), l2_cache.end(), arr[i]);
             if (l2_cache_itr != l2_cache.end()) {
                 ++hits;
@@ -142,7 +143,7 @@ tuple<int, int, int> MOD(const vector<int>& arr, int l1_cache_size, int l2_cache
                 }
                 
             } else {
-                ++misses; // since the block in not found in both L1 and L2
+                ++l2_misses; // since the block in not found in both L1 and L2
                 if (l2_cache.size() == l2_cache_size) {
                     // cache eviction algorithm
                     int index_to_be_removed = arr[i] % l2_cache_size;
@@ -163,9 +164,21 @@ tuple<int, int, int> MOD(const vector<int>& arr, int l1_cache_size, int l2_cache
         }
     }
 
-    return make_tuple(misses, hits, evictions);
+    return make_tuple(l1_misses, l2_misses, hits, evictions);
 }
 
+double calculateAMAT_l2(int l1_misses, int l2_misses, int total, int hit_time_l1, int hit_time_l2, int miss_penalty_l2 ) {
+    double miss_rate_L1 = static_cast<double>(l1_misses) / total;
+    double miss_rate_l2 = static_cast<double>(l2_misses) / total;
+    double AMAT2 = hit_time_l1 + miss_rate_L1 * (hit_time_l2 + miss_rate_l2 * miss_penalty_l2);
+    return AMAT2;
+}
+
+double calculateAMAT(int misses, int total, double hitTime, double missPenalty) {
+    double missRate = static_cast<double>(misses) / total;
+    double AMAT = hitTime + missRate * missPenalty;
+    return AMAT;
+}
 
 int main() {
     // vector<int> arr = {2, 3, 4, 7, 6, 3, 4, 7, 5, 4, 7, 8}; // original
@@ -173,30 +186,38 @@ int main() {
 
     int l1_cache_size = 8;
     int l2_cache_size = 12;
+    int hit_time_l1 = 10; //cc
+    int hit_time_l2 = 14; // cc
+    int miss_penalty_l2 = 100; // cc
     // FIFO
     int fifo_misses, fifo_hits, fifo_evictions;
     tie(fifo_misses, fifo_hits, fifo_evictions) = FIFO(arr, l1_cache_size);
-    cout << "FIFO Misses: " << fifo_misses << ", Hits: " << fifo_hits << ", Evictions: " << fifo_evictions << endl;
+    double fifo_AMAT = calculateAMAT(fifo_misses, fifo_misses+fifo_hits, hit_time_l1, miss_penalty_l2);
+    cout << "FIFO Misses: " << fifo_misses << ", Hits: " << fifo_hits << ", Evictions: " << fifo_evictions << ", AMAT: " << fifo_AMAT << endl;
 
     // LRU
     int lru_misses, lru_hits, lru_evictions;
     tie(lru_misses, lru_hits, lru_evictions) = LRU(arr, l1_cache_size);
-    cout << "LRU Misses: " << lru_misses << ", Hits: " << lru_hits << ", Evictions: " << lru_evictions << endl;
+    double lru_AMAT = calculateAMAT(lru_misses, lru_hits+lru_misses, hit_time_l1, miss_penalty_l2);
+    cout << "LRU Misses: " << lru_misses << ", Hits: " << lru_hits << ", Evictions: " << lru_evictions << ", AMAT: " << lru_AMAT << endl;
 
     // LFU
     int lfu_misses, lfu_hits, lfu_evictions;
     tie(lfu_misses, lfu_hits, lfu_evictions) = LFU(arr, l1_cache_size);
-    cout << "LFU Misses: " << lfu_misses << ", Hits: " << lfu_hits << ", Evictions: " << lfu_evictions << endl;
+    double lfu_AMAT = calculateAMAT(lfu_misses, lfu_misses+lfu_hits, hit_time_l1, miss_penalty_l2);
+    cout << "LFU Misses: " << lfu_misses << ", Hits: " << lfu_hits << ", Evictions: " << lfu_evictions << ", AMAT: " << lfu_AMAT << endl;
 
     // MRU
     int mru_misses, mru_hits, mru_evictions;
     tie(mru_misses, mru_hits, mru_evictions) = MRU(arr, l1_cache_size);
-    cout << "MRU Misses: " << mru_misses << ", Hits: " << mru_hits << ", Evictions: " << mru_evictions << endl;
+    double mru_AMAT = calculateAMAT(mru_misses, mru_misses+mru_hits, hit_time_l1, miss_penalty_l2);
+    cout << "MRU Misses: " << mru_misses << ", Hits: " << mru_hits << ", Evictions: " << mru_evictions << ", AMAT: " << mru_AMAT << endl;;
 
     // MOD
-    int mod_misses, mod_hits, mod_evictions;
-    tie(mod_misses, mod_hits, mod_evictions) = MOD(arr, l1_cache_size, l2_cache_size);
-    cout << "MOD Misses: " << mod_misses << ", Hits: " << mod_hits << ", Evictions: " << mod_evictions << endl;
+    int mod_l1_misses, mod_l2_misses, mod_hits, mod_evictions;
+    tie(mod_l1_misses, mod_l2_misses, mod_hits, mod_evictions) = MOD(arr, l1_cache_size, l2_cache_size);
+    double mod_AMAT = calculateAMAT_l2(mod_l1_misses, mod_l2_misses, 22, hit_time_l1, hit_time_l2, miss_penalty_l2);
+    cout << "MOD Misses: " << mod_l1_misses << ", Hits: " << mod_hits << ", Evictions: " << mod_evictions << ", AMAT: " << mod_AMAT << endl;
 
     return 0;
 }
